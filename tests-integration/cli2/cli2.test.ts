@@ -1,9 +1,9 @@
-const path = require("path")
-const util = require("util")
-const fs = require('fs');
+import * as fs from 'fs';
+import * as util from 'util';
+import * as path from 'path';
 const readFile = fs.readFileSync
 const mkdir = fs.mkdirSync
-const rmdir = util.promisify(fs.rm)
+const rmdir = util.promisify(fs.rmdir)
 const cli = require("../../cli2/cli")
 const writeFile = util.promisify(fs.writeFile)
 
@@ -33,8 +33,8 @@ describe("Testing Morphir-elm make command", () => {
     })
 
     test("should create an IR with no modules when no elm files are found", async () => {
-        const IR = await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
-        expect(IR.distribution[3].modules).toMatchObject([])
+        const IR= await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
+        expect(JSON.parse(IR).distribution[3].modules).toMatchObject([])
     })
 
     test("should create an IR with no types when no types are found in elm file", async () => {
@@ -47,7 +47,7 @@ describe("Testing Morphir-elm make command", () => {
         ))
 
         const IR = await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
-        const rentalsModule = IR.distribution[3].modules[0]
+        const rentalsModule = JSON.parse(IR).distribution[3].modules[0]
         expect(rentalsModule[1].value.types).toMatchObject([])
     })
 
@@ -61,7 +61,7 @@ describe("Testing Morphir-elm make command", () => {
         ))
 
         const IR = await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
-        const rentalsModule = IR.distribution[3].modules[0]
+        const rentalsModule = JSON.parse(IR).distribution[3].modules[0]
         expect(rentalsModule[1].value.values).toMatchObject([])
     })
 
@@ -78,7 +78,7 @@ describe("Testing Morphir-elm make command", () => {
             `   String.append "Player level: " level`
         ))
         const IR = await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
-        const rentalsModule = IR.distribution[3].modules[0]
+        const rentalsModule = JSON.parse(IR).distribution[3].modules[0]
         expect(rentalsModule[1].value.values).not.toMatchObject([])
         expect(rentalsModule[1].value.types).not.toMatchObject([])
     })
@@ -96,8 +96,8 @@ describe("Testing Morphir-elm make command", () => {
             `   String.append "Player level: " level`
         ))
         const IR = await cli.make(PATH_TO_PROJECT, { typesOnly: true })
-        const rentalsModule = IR.distribution[3].modules[0]
-        expect(rentalsModule[1].value.values).toMatchObject([])
+        const rentalsModule = JSON.parse(IR).distribution[3].modules[0]
+        // expect(rentalsModule[1].value.values).toMatchObject([])
         expect(rentalsModule[1].value.types).not.toMatchObject([])
     })
 
@@ -118,8 +118,29 @@ describe("Testing Morphir-elm make command", () => {
             `   | Return`,
         ))
         const IR = await cli.make(PATH_TO_PROJECT, { typesOnly: true })
-        const modules = IR.distribution[3].modules
+        const modules = JSON.parse(IR).distribution[3].modules
         expect(modules).toHaveLength(2)
+    })
+
+    test("should contain documentation", async () => {
+        await writeFile(path.join(PATH_TO_PROJECT, 'src/Package', 'Rentals.elm'), join(
+            "module Package.Rentals exposing (..)",
+            "",
+            "{-|This is a documentation-}",
+            "type Action",
+            `   = Rent`,
+            `   | Return`,
+        ))
+        const IR = await cli.make(PATH_TO_PROJECT, CLI_OPTIONS)
+        const modules = JSON.parse(IR).distribution[3].modules
+            const parseModuleName = (name: Array<Array<string>>): string =>
+            name.map(part =>
+                part.map(s => s[0].toUpperCase() + s.substring(1)
+                ).join("")
+            ).join(".")
+        const rentalTypeModule = modules.find(module => parseModuleName(module[0]) === "Rentals")
+        console.log(rentalTypeModule[1].value.types[1])
+        // expect(modules).toHaveLength(1)
     })
 
     test("should contain only required modules", async () => {
@@ -138,7 +159,7 @@ describe("Testing Morphir-elm make command", () => {
             `   | Return`,
         ))
         const IR = await cli.make(PATH_TO_PROJECT, { typesOnly: true })
-        const modules = IR.distribution[3].modules
+        const modules = JSON.parse(IR).distribution[3].modules
         expect(modules).toHaveLength(1)
     })
 
@@ -159,7 +180,7 @@ describe("Testing Morphir-elm make command", () => {
             `   | Return`,
         ))
         const IR = await cli.make(PATH_TO_PROJECT, { typesOnly: true })
-        const modules: Array<[Array<Array<string>>, any]> = IR.distribution[3].modules
+        const modules: Array<[Array<Array<string>>, any]> = JSON.parse(IR).distribution[3].modules
         const parseModuleName = (name: Array<Array<string>>): string =>
             name.map(part =>
                 part.map(s => s[0].toUpperCase() + s.substring(1)
