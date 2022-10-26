@@ -1709,7 +1709,7 @@ viewDefinitionDetails model =
             , Background.color model.theme.colors.darkest
             , Font.color model.theme.colors.lightest
             , Font.bold
-            , Font.size (model.theme |> Theme.scaled 2)
+            , Font.size model.theme.fontSize
             ]
 
         saveTestcaseButton : FQName -> TestCase -> Element Msg
